@@ -1,28 +1,23 @@
-### Trainer Name ###
-$TrainerName = "Larre Ländin"
+### Script source available here: https://github.com/larrelandin/PS-Script-Send-Outlook-Email ###
 
 ### General path to the script and files ###
-$mainPath = "C:\Users\lal\Box Sync\Training\SXSD\SXSD Email sendout\"
+$mainPath = (Split-Path -Path $MyInvocation.MyCommand.Definition -Parent) + '\'
 
 ### CSV with vouchers ###
-$voucherPath = "csv-file.txt"
+$voucherPath = "Recipients.txt"
 
 ### Exam Email ###
-$HTMLExamEmailPath = "Developer exam access.htm"
+$HTMLExamEmailPath = "Developer exam access.oft"
 
 ### Evaluation Email ###
-$HTMLEvalEmailPath = "Developer eval access.htm"
+$HTMLEvalEmailPath = "Developer evaluation access.oft"
 
-### Email subject lines ###
-$ExamEmailSubject = "SXSD Developer Exam Access"
-$EvalEmailSubject = "SXSD Developer Evaluation Access"
+### Tokens ###
+$StartTokenIdentifier = '['
+$EndTokenIdentifier = ']'
 
-### These tokens will be replaced by the corresponding value ###
-$CommonTokenReplacements = @{"[TrainerName]" = $TrainerName}
-
-### These tokens will be replaced by the value from the CSV ###
-$IndividualTokenReplacements = @{"[ReceiverFirstName]" = "First Name"; "[ReceiverLastName]" = "Last Name"; "[VoucherExamCode]" = "Voucher Test"; "[VoucherEvalCode]" = "Voucher Eval"; "[PartnerName]" = "Partner"}
-
+### File with Global Token Replacements for all emails ###
+$GlobalTokenReplacementsFile = 'GlobalTokenReplacements.txt'
 
 ####################
 ### Script start ###
@@ -42,13 +37,14 @@ elseif($AnswExam -eq 'v')
 }
 Clear-Host
 
-$CommonTokenReplacements
-$IndividualTokenReplacements
+### Importing Global Tokens ###
+$GlobalTokenReplacements = Import-Csv "$mainPath$GlobalTokenReplacementsFile"
+Write-Host ($GlobalTokenReplacements | Format-Table | Out-String)
 
 ### Importing the CSV ###
-$participants = Import-Csv "$mainPath$voucherPath"
+$recipients = Import-Csv "$mainPath$voucherPath"
 
-Write-Host ($participants | Format-Table | Out-String)
+Write-Host ($recipients | Format-Table | Out-String)
 
 [ValidateSet('y','n')]$Answ1 = Read-Host "Is the mapped information correct? [y]es or [n]o?"
 
@@ -57,9 +53,9 @@ if($Answ1 -eq 'y')
     Clear-Host
 
     ### Output a list of emails for verification ###
-    foreach($part in $participants)
+    foreach($rec in $recipients)
     {
-        Write-Host $part.Email
+        Write-Host $rec.Email
         
     }
     Write-Host " "
@@ -67,39 +63,35 @@ if($Answ1 -eq 'y')
     if($Answ2 -eq 'y')
     {
         Clear-Host
-        ### Replace common tokens in html-email ###
-        $HTMLMaster = Get-Content "$mainPath$HTMLSelectedEmailPath"
-
-        foreach($h in $CommonTokenReplacements.GetEnumerator())
+        
+        foreach($rec in $recipients)
         {
-            #Write-Host "$($h.Name): $($h.Value)"
-            $HTMLMaster = $HTMLMaster.Replace($($h.Name),$($h.Value))
-        }
-
-        foreach($part in $participants)
-        {
-            ### Replace individual tokens in html-email ###
-
-            #Create a copy for every email
-            $HTMLMessage = $HTMLMaster
-
-            foreach($h in $IndividualTokenReplacements.GetEnumerator())
-            {
-                #Write-Host "$($h.Name): $($h.Value)"
-                $HTMLMessage = $HTMLMessage.Replace($($h.Name),$part.$($h.Value))
-            }
-            
             ### Send Email using Outlook Client ###
             $Outlook = New-Object -ComObject Outlook.Application
-            $Mail = $Outlook.CreateItem(0)
+            $Mail = $Outlook.CreateItemFromTemplate("$mainPath$HTMLSelectedEmailPath")
 
-            $Mail.To = $part.Email
-            $Mail.Subject = $EmailSubject
-            $Mail.HTMLBody = [string]$HTMLMessage
+            ### Replace global tokens in html-body ###
+            foreach($gt in $GlobalTokenReplacements.GetEnumerator())
+            {
+                $Mail.HTMLBody = $Mail.HTMLBody.Replace("$StartTokenIdentifier$($gt.Name)$EndTokenIdentifier",$($gt.Value))
+            }
+
+            ### Replace individual tokens in html-body ###
+            foreach($it in ($rec | Get-Member -MemberType NoteProperty))
+            {
+                $token = "$StartTokenIdentifier$($it.Name)$EndTokenIdentifier"
+                #Write-Host $token
+                $value = $rec.$($it.Name)
+                #Write-Host $value
+                $Mail.HTMLBody = $Mail.HTMLBody.Replace($token,$value)
+            }
+
+
+            $Mail.To = $rec.Email
             $Mail.Save()
-            #$Mail.Send()
+            ##$Mail.Send()
 
-            Write-Host "DONE: " $part.Email
+            Write-Host "DONE: " $rec.Email
         }
     }
 }

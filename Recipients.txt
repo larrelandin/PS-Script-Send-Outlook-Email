@@ -1,0 +1,4 @@
+Partner,FirstName,LastName,Email,VoucherEvalCode,VoucherExamCode
+Partner1,Lorem,Ipsum,lorem.ipsum@partner.com,AttgQQaz5,AhhMaA7G9TE
+Partner1,Dolor,Sit Amet,Dolor.Sit-Amet@partner.com,AMM2yiGgE5,AArTgwpGy
+Partner2,Consectetur,Adipiscing,consectetur.adipiscing@partner.com,AGGMJEVNJ,Aeebbr2Agp
