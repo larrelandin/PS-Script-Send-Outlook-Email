@@ -4,7 +4,7 @@
 $mainPath = (Split-Path -Path $MyInvocation.MyCommand.Definition -Parent) + '\'
 
 ### CSV with vouchers ###
-$voucherPath = "Recipients.txt"
+$voucherPath = "recipients.csv"
 
 ### Exam Email ###
 $HTMLExamEmailPath = "Developer exam access.oft"
@@ -12,12 +12,13 @@ $HTMLExamEmailPath = "Developer exam access.oft"
 ### Evaluation Email ###
 $HTMLEvalEmailPath = "Developer evaluation access.oft"
 
-### Tokens ###
+### Tokens and separators ###
 $StartTokenIdentifier = '['
 $EndTokenIdentifier = ']'
+$CSVDelimiter =';'
 
 ### File with Global Token Replacements for all emails ###
-$GlobalTokenReplacementsFile = 'GlobalTokenReplacements.txt'
+$GlobalTokenReplacementsFile = 'GlobalTokenReplacements.csv'
 
 ####################
 ### Script start ###
@@ -38,11 +39,11 @@ elseif($AnswExam -eq 'v')
 Clear-Host
 
 ### Importing Global Tokens ###
-$GlobalTokenReplacements = Import-Csv "$mainPath$GlobalTokenReplacementsFile"
+$GlobalTokenReplacements = Import-Csv "$mainPath$GlobalTokenReplacementsFile" -Delimiter $CSVDelimiter
 Write-Host ($GlobalTokenReplacements | Format-Table | Out-String)
 
 ### Importing the CSV ###
-$recipients = Import-Csv "$mainPath$voucherPath"
+$recipients = Import-Csv "$mainPath$voucherPath" -Delimiter $CSVDelimiter
 
 Write-Host ($recipients | Format-Table | Out-String)
 
