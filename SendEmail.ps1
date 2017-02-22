@@ -1,78 +1,84 @@
 ### Script source available here: https://github.com/larrelandin/PS-Script-Send-Outlook-Email ###
 
-### General path to the script and files ###
-$mainPath = (Split-Path -Path $MyInvocation.MyCommand.Definition -Parent) + '\'
+### Filter for voucher-files e.g. vouchers_MilanFeb2017.csv ###
+$voucherFilter = "vouchers_*.csv"
 
-### CSV with vouchers ###
-$voucherPath = "recipients.csv"
+### Filter for signature-files e.g. signature_lal.csv
+$signatureFilter = "signature_*.csv"
 
-### Exam Email ###
-$HTMLExamEmailPath = "Developer exam access.oft"
-
-### Evaluation Email ###
-$HTMLEvalEmailPath = "Developer evaluation access.oft"
 
 ### Tokens and separators ###
-$StartTokenIdentifier = '['
-$EndTokenIdentifier = ']'
+$StartTokenIdentifier = '$'
+$EndTokenIdentifier = '$'
 $CSVDelimiter =';'
 
-### File with Global Token Replacements for all emails ###
-$GlobalTokenReplacementsFile = 'GlobalTokenReplacements.csv'
 
 ####################
 ### Script start ###
 ####################
+
+### General path to the script and files ###
+$mainPath = (Split-Path -Path $MyInvocation.MyCommand.Definition -Parent) + '\'
+
 Clear-Host
 
-[ValidateSet('x','v')]$AnswExam = Read-Host "Do you want to generate e[x]am email or e[v]aluate email?"
-if($AnswExam -eq 'x')
-{
-    $HTMLSelectedEmailPath = $HTMLExamEmailPath
-    $EmailSubject = $ExamEmailSubject
-}
-elseif($AnswExam -eq 'v')
-{
-    $HTMLSelectedEmailPath = $HTMLEvalEmailPath
-    $EmailSubject = $EvalEmailSubject
-}
-Clear-Host
+###
 
-### Importing Global Tokens ###
-$GlobalTokenReplacements = Import-Csv "$mainPath$GlobalTokenReplacementsFile" -Delimiter $CSVDelimiter
-Write-Host ($GlobalTokenReplacements | Format-Table | Out-String)
+$signatures = Get-ChildItem -Path $mainPath -Filter $signatureFilter
+$signaturePath = $signatures | Out-GridView -Title "Select the appropriate signature file" -PassThru
+
+###
+
+$vouchers = Get-ChildItem -Path $mainPath -Filter $voucherFilter
+$voucherPath = $vouchers | Out-GridView -Title "Select the appropriate voucher file" -PassThru
+
+###
+
+$mailTemplates = Get-ChildItem -Path $mainPath -Filter "*.oft"
+$mailTemplate = $mailTemplates | Out-GridView -Title "Select an email template" -PassThru
+
+write-host "You selected the following Email Template:"
+write-host $mailTemplate -ForegroundColor Green
+write-host "`n"
+
+###
+
+### Importing Signature Tokens ###
+$SignatureFile = Import-Csv "$mainPath$SignaturePath" -Delimiter $CSVDelimiter
+write-host "These are your local tokens:"
+write-host $signaturePath -ForegroundColor Green
+Write-Host ($SignatureFile | Format-Table | Out-String) -ForegroundColor Green
 
 ### Importing the CSV ###
 $recipients = Import-Csv "$mainPath$voucherPath" -Delimiter $CSVDelimiter
 
-Write-Host ($recipients | Format-Table | Out-String)
+Write-Host "This is your list with vouchers:"
+write-host $voucherPath -ForegroundColor Green
+Write-Host ($recipients | Format-Table | Out-String) -ForegroundColor Green
 
 [ValidateSet('y','n')]$Answ1 = Read-Host "Is the mapped information correct? [y]es or [n]o?"
 
 if($Answ1 -eq 'y')
 {
-    Clear-Host
 
     ### Output a list of emails for verification ###
     foreach($rec in $recipients)
     {
-        Write-Host $rec.Email
-        
+        Write-Host $rec.Email -ForegroundColor Green
     }
     Write-Host " "
     [ValidateSet('y','n')]$Answ2 = Read-Host "Emails seem correct? [y]es or [n]o?"
     if($Answ2 -eq 'y')
     {
-        Clear-Host
         
         foreach($rec in $recipients)
         {
             ### Send Email using Outlook Client ###
             $Outlook = New-Object -ComObject Outlook.Application
-            $Mail = $Outlook.CreateItemFromTemplate("$mainPath$HTMLSelectedEmailPath")
+            $Mail = $Outlook.CreateItemFromTemplate("$mainPath$mailTemplate")
 
             ### Replace global tokens in html-body ###
-            foreach($gt in $GlobalTokenReplacements.GetEnumerator())
+            foreach($gt in $SignatureFile.GetEnumerator())
             {
                 $Mail.HTMLBody = $Mail.HTMLBody.Replace("$StartTokenIdentifier$($gt.Name)$EndTokenIdentifier",$($gt.Value))
             }
@@ -92,7 +98,7 @@ if($Answ1 -eq 'y')
             $Mail.Save()
             ##$Mail.Send()
 
-            Write-Host "DONE: " $rec.Email
+            Write-Host "DONE: " $rec.Email -ForegroundColor Cyan
         }
     }
 }
