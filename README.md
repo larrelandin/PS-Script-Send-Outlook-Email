@@ -4,9 +4,10 @@ Relies on a set of comma separated files tokens to populate and send emails. Ema
 
 Users:
 
-1. Right click "SendEmail.ps1" and select "Run With PowerShell"
-2. Follow instructions in the script, select whatever applies to you.
-3. Open draft-folder in Outlook, review the emails and send them.
+1. Close down Outlook
+2. Right click "SendEmail.ps1" and select "Run With PowerShell"
+3. Follow instructions in the script, select whatever applies to you.
+4. Open draft-folder in Outlook, review the emails and send them.
 
 
 For admins:

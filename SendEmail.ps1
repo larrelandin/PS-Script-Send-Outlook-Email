@@ -70,6 +70,13 @@ if($Answ1 -eq 'y')
     [ValidateSet('y','n')]$Answ2 = Read-Host "Emails seem correct? [y]es or [n]o?"
     if($Answ2 -eq 'y')
     {
+
+        if($null -ne (Get-Process -name outlook -ErrorAction SilentlyContinue))
+        {
+            Write-Host -ForegroundColor Red "Outlook seems to be running, you need to shut it off before continuing"
+            Write-Host -ForegroundColor Red "Press any key to continue..."
+            $null = $Host.UI.RawUI.ReadKey('NoEcho,IncludeKeyDown');
+        }
         
         foreach($rec in $recipients)
         {
